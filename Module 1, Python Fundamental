@@ -1,0 +1,279 @@
+# Name : Muhammad Arief Munazat
+# Project Capstone Data Science - Module 1, Python Fundamental
+# Background/Theme : BMW Premium Selection Showroom/Dealer
+# 3 main structures of components : Database, Functions, Main Program
+# Support library by tabulate
+
+
+from tabulate import tabulate
+
+# BASE DATA (CODE - NAME - YEAR - PRICE)
+bmw_units = {
+    "3 Series": [
+        {"code": "320i-SP-2020", "name": "320i Sport", "year": 2020, "price": 650_000_000},
+        {"code": "330i-SP-2021", "name": "330i Sport", "year": 2021, "price": 850_000_000}
+    ],
+    "5 Series": [
+        {"code": "520i-LU-2019", "name": "520i Luxury", "year": 2019, "price": 900_000_000},
+        {"code": "530e-SP-2022", "name": "530e Sport", "year": 2022, "price": 1_150_000_000}
+    ],
+    "7 Series": [
+        {"code": "730Li-PE-2018", "name": "730Li Pure Excellence", "year": 2018, "price": 1_600_000_000}
+    ],
+    "X Series": [
+        {"code": "X5-XD-2022", "name": "X5 xDrive40i", "year": 2022, "price": 1_750_000_000}
+    ],
+    "M Series": [
+        {"code": "M4-CO-2021", "name": "M4 Coupe Competition", "year": 2021, "price": 2_450_000_000}
+    ]
+}
+
+# REGULAR FUNCTIONS 
+def show_inventory():                               # To show the product display (represent READ function)
+    print("\n---- BMW PREMIUM SELECTION INVENTORY ----\n")
+    for series, units in bmw_units.items():
+        print(f"🔘 {series}")
+        table = []
+        for u in units:
+            table.append([u["code"], u["name"], u["year"], f"Rp{u['price']:,}"])
+        print(tabulate(table, headers=["Code", "Model", "Year", "Price"], tablefmt="fancy_grid"))
+
+def model_abbreviation(model_name):                 # To create alias and utilized in function CREATE & UPDATE.
+    mapping = {
+        "sport": "SP",
+        "luxury": "LU",
+        "competition": "CO",
+        "pure excellence": "PE",
+        "xdrive": "XD",
+    }
+
+    lower_name = model_name.lower()                 # Change all to lowercase to mapping check
+    for key, abbr in mapping.items():               # Check if any key in mapping exist in model name
+        if key in lower_name:
+            return abbr
+
+    words = model_name.split()                      # If it’s not in the mapping, take the second word and its first two letters.
+    
+    if len(words) >= 3:
+        return (words[1][0] + words[2][0]).upper()  # Take first letter of 2nd and 3rd words
+    elif len(words) == 2:
+        return words[1][:2].upper()
+    else:                                           # If only one word, ask user to re-input the model name
+        new_model = input("Model name not recognized. Please enter the model name again: ")
+        return model_abbreviation(new_model)
+
+def add_unit():                                     # To add new product or unit in each series lists (represent CREATE function)
+    print("\n---- ADD NEW UNIT ----\n")
+    # Validation for series input
+    for attempt in range(3):
+        series = input("Enter series (3 Series / 5 Series / 7 Series / X Series / M Series): ").strip().title()
+        if series in bmw_units:
+            break
+        else:
+            print("\n⚠️  Please choose an existing series.")
+    else:
+        print("\n🚫 Too many invalid attempts. Returning to main menu.")
+        return
+    
+    # Model name input
+    for attempt in range(3):
+        name = input("Enter full model name (e.g., 320i Luxury): ").strip()
+        parts = name.split()
+        has_number = any(any(c.isdigit() for c in p) for p in parts)  # Check if any part has a number
+        # Validation for model name input (must have at least 2 words and one with number)
+        if len(parts) >= 2 and has_number:
+            name = parts[0] + " " + " ".join(p.title() for p in parts[1:])
+            break
+        else:
+            print("⚠️ Incomplete information. You must enter both model code and type (e.g., 320i Luxury).")
+    else:
+        print("\n🚫 Too many invalid attempts. Returning to main menu.")
+        return
+    
+    # Validation for year input (4 digits)
+    for attempt in range(3):
+        year = input("Enter year (4 digits): ").strip()
+        if year.isdigit() and len(year) == 4:
+            break
+        else:
+            print("⚠️ Please enter a 4-digit number (e.g., 2020).")
+    else:
+        print("\n🚫 Too many invalid attempts. Returning to main menu.")
+        return
+   
+    # Validation for price input (numeric only)
+    for attempt in range(3):
+        price_input = input("Enter price (numeric only): ").strip().replace(".", "").replace(",", "")
+        if price_input.isdigit():
+            price = int(price_input)
+            break
+        else:
+            print("⚠️ Invalid price. Please enter numbers only (e.g., 350000000).")
+    else:
+        print("\n🚫 Too many invalid attempts. Returning to main menu.")
+        return
+    
+    # Generate unique code for the new unit
+    parts = name.split()
+    model_code = ""
+    for p in parts:
+        if any(c.isdigit() for c in p):             # Detection such as '320i'
+            model_code = p
+            break
+    
+    # Taking model abbrevation & generate final unique code
+    abbrev = model_abbreviation(name)
+    code = f"{model_code}-{abbrev}-{year}"
+    
+    # Save new unit to the respective series list
+    new_unit = {"code": code, "name": name, "year": int(year), "price": price}
+    bmw_units[series].append(new_unit)              
+
+    print(f"\n✅ {name} has been successfully added to {series} with code {code}.")
+
+def delete_unit():                                  # To delete product in each series lists (represent DELETE function)
+    print("\n---- DELETE UNIT or SOLD ----\n")
+    show_inventory()
+
+    max_attempts = 3                    # Limit attempts for user input
+    attempt = 0
+    
+    while attempt < max_attempts:       # Loop until max attempts reached
+        code = input("Enter the code of the unit to delete: ").strip()
+        found = False
+        
+        # Search for the unit by code
+        for series, units in bmw_units.items():
+            for u in units:
+                if u["code"] == code:
+                    confirm = input(f"Are you sure to delete {u['name']} from {series}? (y/n): ").lower()
+                    if confirm == "y":
+                        units.remove(u)
+                        print(f"\n✅ {u['name']} has been removed from {series}.")
+                    else:
+                        print("\n❌ Deletion cancelled.")
+                    return
+        
+        # If not found, increment attempt and ask user if they want to return to main menu
+        if not found:
+                attempt += 1
+                print(f"\n⚠️  No unit found with that code. Attempt {attempt}/{max_attempts}.")
+        
+                # If max attempts not reached, ask to return to main menu or retry
+                if attempt < max_attempts:
+                    choice = input("Type 'y' to return to main menu or 'enter' to try again): ").lower()
+                    if choice == "y":
+                        print("\n↩️ Returning to main menu.")
+                        return
+                    else:
+                        print("\n🔁 Please try again.\n")
+                else:
+                    print("\n🚫 Maximum attempts reached. No unit found with that code.")
+                    return       
+
+def update_unit():                                  # To update product available in each series lists (represent UPDATE function)
+    print("\n---- UPDATE UNIT ----\n")
+    show_inventory()
+    
+    max_attempts = 3                # Limit attempts for user input
+    attempt = 0
+
+    while attempt < max_attempts:   # Loop until max attempts reached
+        code = input("Enter the code of the unit to update: ").strip()
+        found = False
+        
+        # Search for the unit by code
+        for series, units in bmw_units.items():
+            for u in units:
+                if u["code"] == code:
+                    found = True
+                    print(f"\n✅ Found {u['name']} in {series}")
+                    print("Leave a field blank if you don't want to change it.")
+
+                    # Update name
+                    for name_attempt in range(3):
+                        new_name = input(f"Enter new model name (current: {u['name']}): ").strip().title()
+                        if new_name == "":
+                            break  # No change or blank input
+                        parts = new_name.split()
+                        if len(parts) < 2 or not any(any(c.isdigit() for c in p) for p in parts):
+                            print(f"⚠️ Enter new model name. Attempt {name_attempt + 1}/3")
+                            continue
+                        u["name"] = new_name.title()
+                        model_code = next((p for p in parts if any(c.isdigit() for c in p)), "")
+                        abbrev = model_abbreviation(new_name)
+                        u["code"] = f"{model_code}-{abbrev}-{u['year']}"
+                        break
+
+                    # Update year
+                    for year_attempt in range(3):
+                        new_year = input(f"Enter new year (current: {u['year']}): ").strip()
+                        if new_year == "":
+                            break   # No change or blank input
+                        if not (new_year.isdigit() and len(new_year) == 4):
+                            print(f"⚠️ Invalid year. Must be 4 digits. Attempt {year_attempt + 1}/3")
+                            continue
+                        u["year"] = int(new_year)
+                        parts = u["code"].split("-")
+                        parts[-1] = str(new_year)
+                        u["code"] = "-".join(parts)
+                        break
+
+                    # Update price
+                    for price_attempt in range(3):
+                        new_price = input(f"Enter new price (current: Rp{u['price']:,}): ").strip()
+                        if new_price == "":
+                            break   # No change or blank input
+                        if not new_price.isdigit():
+                            print(f"⚠️ Price must be numeric. Attempt {price_attempt + 1}/3")
+                            continue
+                        u["price"] = int(new_price)
+                        break
+                    
+                    # Final confirmation
+                    print(f"\n✅ {u['name']} has been successfully updated!")
+                    return
+                
+        # If not found, increment attempt and ask user if they want to retry or return to main menu
+        if not found:
+            attempt += 1
+            print(f"\n⚠️  No unit found with that code. Attempt {attempt}/{max_attempts}")
+            if attempt < max_attempts:
+                choice = input("Type 'y' to return to main menu or 'enter' to try again: ").lower()
+                if choice == "y":
+                    print("\n↩️ Returning to main menu")
+                    return
+                else:
+                        print("\n🔁 Please try again.\n")
+            else:
+                print("🚫 Maximum attempts reached. No unit found with that code.")
+                return
+
+# MAIN PROGRAM
+while True:
+    print("""
+---- BMW PREMIUM SELECTION SALES MENU ----\n
+1. Show Available Units
+2. Add New Unit
+3. Unit Delete / Sold
+4. Update Unit
+5. Exit Program
+""")
+
+    choice = input("Select menu (1-5): ")
+
+    if choice == "1":
+        show_inventory()
+    elif choice == "2":
+        add_unit()
+    elif choice == "3":
+        delete_unit()
+    elif choice == "4":
+        update_unit()
+    elif choice == "5":
+        print("Thank you for using BMW Premium Selection Sales System!")
+        break
+    else:
+        print("\n❌ Invalid choice. Please try again.")
+        continue
+
