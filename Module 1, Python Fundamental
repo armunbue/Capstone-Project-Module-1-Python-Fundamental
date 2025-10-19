@@ -192,14 +192,14 @@ def update_unit():                                  # To update product availabl
 
                     # Update name
                     for name_attempt in range(3):
-                        new_name = input(f"Enter new model name (current: {u['name']}): ").strip().title()
+                        new_name = input(f"Enter new model name (current: {u['name']}): ").strip()
                         if new_name == "":
                             break  # No change or blank input
                         parts = new_name.split()
                         if len(parts) < 2 or not any(any(c.isdigit() for c in p) for p in parts):
                             print(f"⚠️ Enter new model name. Attempt {name_attempt + 1}/3")
                             continue
-                        u["name"] = new_name.title()
+                        u["name"] = new_name
                         model_code = next((p for p in parts if any(c.isdigit() for c in p)), "")
                         abbrev = model_abbreviation(new_name)
                         u["code"] = f"{model_code}-{abbrev}-{u['year']}"
